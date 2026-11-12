@@ -1,6 +1,6 @@
-# RoomLink — two-way audio bridge for Windows
+# <img src="src/RoomLink/Assets/appicon-256.png" width="40" alt="RoomLink icon" valign="middle"> RoomLink — two-way audio bridge for Windows
 
-![app icon](src/RoomLink/Assets/appicon-256.png)
+![RoomLink application window](RoomLink.png)
 
 Turns a Bluetooth headset worn by a *remote* person into a hands-free intercom:
 
@@ -11,6 +11,11 @@ PC microphone       →  headset speaker   (they hear you)
 
 The remote person runs nothing — the headset just behaves like a phone call.
 Great for talking to someone in another room while they keep their headset on.
+
+**Download:**
+[⬇ RoomLinkSetup-0.2.0.exe (installer)](https://github.com/eaeoz/RoomLink/releases/download/2.0.0/RoomLinkSetup-0.2.0.exe)
+·
+[⬇ RoomLink.exe (portable)](https://github.com/eaeoz/RoomLink/releases/download/2.0.0/RoomLink.exe)
 
 ---
 
@@ -28,8 +33,10 @@ Great for talking to someone in another room while they keep their headset on.
 
 ### Option A — Installer (recommended)
 
-1. Download the latest `RoomLinkSetup-<version>.exe` from the
-   [Releases](https://github.com/eaeoz/RoomLink/releases) page.
+1. Download the latest installer:
+   [RoomLinkSetup-0.2.0.exe](https://github.com/eaeoz/RoomLink/releases/download/2.0.0/RoomLinkSetup-0.2.0.exe)
+   (or grab any newer version from the
+   [Releases](https://github.com/eaeoz/RoomLink/releases) page).
 2. Run it. By default it installs per-user to
    `%LOCALAPPDATA%\Programs\RoomLink` (no admin rights needed).
 3. In the wizard you can optionally tick:
@@ -41,7 +48,10 @@ carry the same headset icon.
 
 ### Option B — Portable (no install)
 
-1. Download `RoomLink-Portable.zip` from Releases.
+1. Download the portable build:
+   [RoomLink.exe](https://github.com/eaeoz/RoomLink/releases/download/2.0.0/RoomLink.exe)
+   (or grab the zip from the
+   [Releases](https://github.com/eaeoz/RoomLink/releases) page).
 2. Unzip anywhere and run `RoomLink.exe`.
 3. To auto-start with Windows, create a shortcut to it in
    `shell:startup` (optional).
@@ -131,6 +141,7 @@ dotnet run --project src/RoomLink
 RoomLink/
 ├── build.ps1                     # One-step release build (icon + publish + installer)
 ├── README.md
+├── RoomLink.png                  # App preview screenshot (used in this README)
 ├── RoomLinkDevices.txt           # Output of `RoomLink.exe --devices`
 ├── installer/
 │   └── roomlink.iss              # Inno Setup 6 script → RoomLinkSetup-<version>.exe
