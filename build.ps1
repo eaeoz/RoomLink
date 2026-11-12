@@ -12,6 +12,10 @@ $dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source
 if (-not $dotnet) { $dotnet = "$env:ProgramFiles\dotnet\dotnet.exe" }
 if (-not (Test-Path $dotnet)) { throw "dotnet SDK not found. Install .NET 8 SDK." }
 
+Write-Host "== app icon ==" -ForegroundColor Cyan
+& powershell -NoProfile -ExecutionPolicy Bypass -File "$root\Tools\MakeIcon.ps1"
+if ($LASTEXITCODE -ne 0) { throw "icon generation failed" }
+
 Write-Host "== dotnet publish (single-file) ==" -ForegroundColor Cyan
 & $dotnet publish "$root\src\RoomLink\RoomLink.csproj" -c Release -r win-x64 `
   -o "$root\dist\publish" --nologo

@@ -9,7 +9,8 @@ namespace RoomLink;
 /// Device picker / control window.
 /// Top group: the remote person's Bluetooth headset (mic first, then speaker).
 /// Bottom group: this PC (mic first, then speaker).
-/// Closing the window hides it to the tray; the app lives in the tray until "Exit".
+/// Closing the window exits the app (bridge stopped, tray icon removed);
+/// while the window is open the app also lives in the tray.
 /// </summary>
 public sealed class DevicePickerForm : Form
 {
@@ -37,6 +38,10 @@ public sealed class DevicePickerForm : Form
         MinimizeBox = true;
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(524, 476);
+
+        // Use the icon embedded in RoomLink.exe for the title bar and taskbar.
+        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
+        catch { /* fall back to the default form icon */ }
 
         // ------------------------------------------------ REMOTE group ----
         var grpRemote = new GroupBox
@@ -174,10 +179,11 @@ public sealed class DevicePickerForm : Form
         {
             if (e.CloseReason == CloseReason.UserClosing && !_app.IsExiting)
             {
-                // Closing the window stops the bridge, then hides to tray.
+                // Closing the window quits the app completely: the bridge is
+                // stopped and no background process is left behind.
+                // (While running, the app keeps its tray icon anyway.)
                 e.Cancel = true;
-                _app.Stop();
-                Hide();
+                _app.Exit();
             }
         };
     }

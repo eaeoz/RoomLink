@@ -49,7 +49,7 @@ public sealed class TrayContext : ApplicationContext
             catch (Exception ex) { ShowError("Auto-start failed", ex); }
         }
 
-        // Always open the control window on launch; closing it hides to tray.
+        // Always open the control window on launch; closing it exits the app.
         ShowConfig();
     }
 
@@ -186,7 +186,14 @@ public sealed class TrayContext : ApplicationContext
         });
     }
 
-    private void ExitApp()
+    private void ExitApp() => Exit();
+
+    /// <summary>
+    /// Fully shuts the app down: stops the bridge, removes the tray icon and
+    /// ends the message loop, so closing the window never leaves a background
+    /// process behind.
+    /// </summary>
+    public void Exit()
     {
         IsExiting = true;   // lets the window close for real (it hides to tray otherwise)
         Stop();

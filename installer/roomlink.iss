@@ -17,6 +17,8 @@ Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
+; Icon shown by RoomLinkSetup.exe itself
+SetupIconFile=..\src\RoomLink\Assets\appicon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Tasks]
@@ -25,11 +27,14 @@ Name: "startup"; Description: "Start RoomLink when Windows starts"; Flags: unche
 
 [Files]
 Source: "..\dist\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+; .ico used by the Start-menu and desktop shortcuts (RoomLink.exe carries the
+; same icon embedded, but an explicit IconFilename makes it bullet-proof)
+Source: "..\src\RoomLink\Assets\appicon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"
+Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"; IconFilename: "{app}\appicon.ico"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\appicon.ico"; Tasks: desktopicon
 
 [Registry]
 ; Auto-start task writes a Run-key entry (checked task only)

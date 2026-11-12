@@ -9,6 +9,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>RoomLink</AssemblyName>
     <RootNamespace>RoomLink</RootNamespace>
+    <!-- Win32 icon embedded in RoomLink.exe (window/taskbar, Explorer, shortcuts) -->
+    <ApplicationIcon>Assets\appicon.ico</ApplicationIcon>
     <!-- Single-file publish settings (used by build.ps1) -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
