@@ -14,10 +14,24 @@ public sealed class AudioDeviceInfo
     public required string Name { get; init; }
     public required DataFlow Flow { get; init; }   // Capture = mic/in, Render = speaker/out
     public required bool IsBluetooth { get; init; }
+    public required bool IsVirtual { get; init; }
     public required bool IsDefault { get; init; }
 
-    public override string ToString() =>
-        (IsBluetooth ? "[BT] " : "") + Name + (IsDefault ? "  (default)" : "");
+    /// <summary>Display text with flags, used in the UI dropdowns.</summary>
+    public string DisplayName
+    {
+        get
+        {
+            var tags = new List<string>();
+            if (IsBluetooth) tags.Add("BT");
+            if (IsVirtual) tags.Add("virtual");
+            if (IsDefault) tags.Add("default");
+            var prefix = tags.Count > 0 ? $"[{string.Join(", ", tags)}] " : "";
+            return prefix + Name;
+        }
+    }
+
+    public override string ToString() => DisplayName;
 }
 
 /// <summary>
@@ -64,6 +78,7 @@ public static class DeviceService
                 Name = dev.FriendlyName,
                 Flow = flow,
                 IsBluetooth = IsBluetooth(dev),
+                IsVirtual = IsVirtual(dev),
                 IsDefault = dev.ID == defaultId,
             });
         }
@@ -83,6 +98,18 @@ public static class DeviceService
             || name.Contains("Handsfree", StringComparison.OrdinalIgnoreCase)
             || name.Contains("Bluetooth", StringComparison.OrdinalIgnoreCase)
             || name.Contains("AirPods", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Virtual audio devices (VB-Cable etc.) are loopback endpoints — picking
+    /// them as "speakers" or "mic" means nobody ever hears anything.
+    /// </summary>
+    private static bool IsVirtual(MMDevice dev)
+    {
+        var name = dev.FriendlyName;
+        return name.Contains("VB-Audio", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("CABLE", StringComparison.OrdinalIgnoreCase)
+            || name.Contains("Virtual", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Open a capture device by id.</summary>

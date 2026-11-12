@@ -19,12 +19,21 @@ public sealed class TrayContext : ApplicationContext
     private Bridge? _bridgeB;   // local mic → headset speaker  ("you → remote")
 
     public bool IsRunning { get; private set; }
+
+    /// <summary>Set when the user chose Exit, so the window may really close.</summary>
+    public bool IsExiting { get; private set; }
+
     public Settings Settings => _settings;
+
+    /// <summary>Live bridges for status meters (null when stopped).</summary>
+    public Bridge? BridgeRemoteToLocal => _bridgeA;
+    public Bridge? BridgeLocalToRemote => _bridgeB;
 
     public event EventHandler? StateChanged;
 
     public TrayContext()
     {
+        Logger.Write("=== RoomLink started ===");
         _settings = Settings.Load();
         _tray = new NotifyIcon
         {
@@ -37,8 +46,11 @@ public sealed class TrayContext : ApplicationContext
         if (_settings.IsComplete && _settings.AutoStart)
         {
             try { Start(); }
-            catch (Exception ex) { ShowError("Auto-start failed", ex); ShowConfig(); }
+            catch (Exception ex) { ShowError("Auto-start failed", ex); }
         }
+
+        // Always open the control window on launch; closing it hides to tray.
+        ShowConfig();
     }
 
     // ------------------------------------------------------------------ menu
@@ -64,6 +76,8 @@ public sealed class TrayContext : ApplicationContext
         };
 
         menu.Items.AddRange(new ToolStripItem[] { startItem, stopItem, new ToolStripSeparator(), autoItem, new ToolStripSeparator() });
+        menu.Items.Add("Open log file", null, (_, _) => OpenLog());
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("E&xit", null, (_, _) => ExitApp());
 
         // Enable/disable items depending on state
@@ -155,12 +169,24 @@ public sealed class TrayContext : ApplicationContext
         MessageBox.Show(ex.Message, title, MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
+    private static void OpenLog()
+    {
+        Logger.Write("--- log opened by user ---");
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = Logger.Path,
+            UseShellExecute = true,   // opens in the default text editor
+        });
+    }
+
     private void ExitApp()
     {
+        IsExiting = true;   // lets the window close for real (it hides to tray otherwise)
         Stop();
         _form?.Close();
         _tray.Visible = false;
         _tray.Icon?.Dispose();
         Application.Exit();
+        Logger.Write("=== RoomLink exited ===");
     }
 }

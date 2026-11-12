@@ -15,7 +15,7 @@ public sealed class Settings
     public string? LocalMicId { get; set; }
     public string? LocalSpeakerId { get; set; }
 
-    public bool AutoStart { get; set; } = true;
+    public bool AutoStart { get; set; } = false;
     public float HeadsetToSpeakersGain { get; set; } = 1.0f;
     public float MicToHeadsetGain { get; set; } = 1.0f;
 

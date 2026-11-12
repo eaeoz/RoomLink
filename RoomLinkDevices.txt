@@ -1,0 +1,12 @@
+in|CABLE Output (VB-Audio Virtual Cable)|{0.0.1.00000000}.{2f235111-98a4-42ad-85cb-df35e660e64e}
+in|Headset (JBL T450BT)|{0.0.1.00000000}.{01d93569-7a47-4cd3-bc3c-a3c883a5934e}
+in|Headset (USBC Headset)|{0.0.1.00000000}.{3bbc824f-1f18-46cc-88d2-5424aded867f}
+in|Microphone (Iriun Webcam)|{0.0.1.00000000}.{4e4bc08b-4564-4cb2-8ce0-1b7dc65ff29c}
+in|Microphone (WO Mic Device)|{0.0.1.00000000}.{779381cd-8875-42d8-9e06-b950c5c1fd82}
+in|MIDI (Iriun Webcam)|{0.0.1.00000000}.{4d3af26c-7e1a-4406-ab9e-da6d3d9b1b1e}
+out|6 - VG220Q (AMD High Definition Audio Device)|{0.0.0.00000000}.{6dfd6747-f48f-46e7-b873-553b51459c79}
+out|CABLE In 16ch (VB-Audio Virtual Cable)|{0.0.0.00000000}.{ad39395c-de97-426c-80da-1e732aef4c3a}
+out|CABLE Input (VB-Audio Virtual Cable)|{0.0.0.00000000}.{8fc8349b-f00f-4a60-b3be-fe1c815d41be}
+out|Headphones (JBL T450BT)|{0.0.0.00000000}.{92096b7a-5302-4c58-9e8c-e27fae37b042}
+out|Headset (USBC Headset)|{0.0.0.00000000}.{95f094c2-1b52-48d6-bf15-0c40957fcc95}
+out|Speakers (Realtek(R) Audio)|{0.0.0.00000000}.{0e7eb018-0b6b-4a11-9638-df50471cce3a}

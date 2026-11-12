@@ -1,14 +1,15 @@
 using System;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 using NAudio.CoreAudioApi;
 
 namespace RoomLink;
 
 /// <summary>
-/// Device picker / control window. Closing the window hides it to the tray;
-/// the app lives in the tray until "Exit".
+/// Device picker / control window.
+/// Top group: the remote person's Bluetooth headset (mic first, then speaker).
+/// Bottom group: this PC (mic first, then speaker).
+/// Closing the window hides it to the tray; the app lives in the tray until "Exit".
 /// </summary>
 public sealed class DevicePickerForm : Form
 {
@@ -33,58 +34,82 @@ public sealed class DevicePickerForm : Form
         MaximizeBox = false;
         MinimizeBox = true;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(520, 470);
+        ClientSize = new Size(524, 476);
 
-        var label1 = AddLabel("Remote headset — MICROPHONE (their voice comes in)", 16, 16);
-        BindCapture(_headsetMic, 16, 40);
-        var label2 = AddLabel("Local speakers — where you hear them", 16, 76);
-        BindRender(_localSpk, 16, 100);
-        var label3 = AddLabel("Local microphone — what they hear from you", 16, 136);
-        BindCapture(_localMic, 16, 160);
-        var label4 = AddLabel("Remote headset — SPEAKER (their earpiece)", 16, 196);
-        BindRender(_headsetSpk, 16, 220);
+        // ------------------------------------------------ REMOTE group ----
+        var grpRemote = new GroupBox
+        {
+            Text = "Remote person — Bluetooth headset",
+            Location = new Point(12, 10),
+            Size = new Size(500, 134),
+        };
+        grpRemote.Controls.Add(MakeLabel("Microphone  (their voice comes in)", 14, 22));
+        _headsetMic = MakeCombo(DataFlow.Capture, new Point(14, 42));
+        grpRemote.Controls.Add(MakeLabel("Speaker  (their earpiece)", 14, 74));
+        _headsetSpk = MakeCombo(DataFlow.Render, new Point(14, 94));
+        grpRemote.Controls.AddRange(new Control[] { _headsetMic, _headsetSpk });
 
-        // Gains
-        var label5 = AddLabel("Remote → You volume", 16, 258);
-        _gainRemote.Minimum = 0; _gainRemote.Maximum = 100;
-        _gainRemote.TickFrequency = 10; _gainRemote.Width = 320;
-        _gainRemote.Left = 16; _gainRemote.Top = 282;
+        // ------------------------------------------------- LOCAL group ----
+        var grpLocal = new GroupBox
+        {
+            Text = "This PC — you",
+            Location = new Point(12, 148),
+            Size = new Size(500, 134),
+        };
+        grpLocal.Controls.Add(MakeLabel("Microphone  (what they hear)", 14, 22));
+        _localMic = MakeCombo(DataFlow.Capture, new Point(14, 42));
+        grpLocal.Controls.Add(MakeLabel("Speakers  (where you hear them)", 14, 74));
+        _localSpk = MakeCombo(DataFlow.Render, new Point(14, 94));
+        grpLocal.Controls.AddRange(new Control[] { _localMic, _localSpk });
+
+        // ------------------------------------------------------ gains ----
+        var lblGainRemote = MakeLabel("Remote → You volume", 16, 288);
+        _gainRemote.Minimum = 0;
+        _gainRemote.Maximum = 100;
+        _gainRemote.TickFrequency = 10;
+        _gainRemote.Width = 320;
+        _gainRemote.Location = new Point(16, 308);
         _gainRemote.Value = (int)Math.Round(_app.Settings.HeadsetToSpeakersGain * 100);
 
-        var label6 = AddLabel("You → Remote volume", 16, 318);
-        _gainLocal.Minimum = 0; _gainLocal.Maximum = 100;
-        _gainLocal.TickFrequency = 10; _gainLocal.Width = 320;
-        _gainLocal.Left = 16; _gainLocal.Top = 342;
+        var lblGainLocal = MakeLabel("You → Remote volume", 16, 336);
+        _gainLocal.Minimum = 0;
+        _gainLocal.Maximum = 100;
+        _gainLocal.TickFrequency = 10;
+        _gainLocal.Width = 320;
+        _gainLocal.Location = new Point(16, 356);
         _gainLocal.Value = (int)Math.Round(_app.Settings.MicToHeadsetGain * 100);
 
-        // Buttons
+        // ---------------------------------------------------- buttons ----
         _toggle.Size = new Size(150, 34);
-        _toggle.Location = new Point(16, 384);
+        _toggle.Location = new Point(16, 392);
         _toggle.Click += (_, _) => Toggle();
 
         var btnRefresh = new Button
         {
             Text = "Refresh devices",
             Size = new Size(150, 34),
-            Location = new Point(180, 384),
+            Location = new Point(180, 392),
         };
         btnRefresh.Click += (_, _) => RefreshDeviceLists();
 
-        // Status
+        // ----------------------------------------------------- status ----
         _status.AutoSize = true;
-        _status.Location = new Point(16, 426);
+        _status.Location = new Point(16, 434);
         _status.ForeColor = Color.DimGray;
 
         Controls.AddRange(new Control[]
         {
-            label1, label2, label3, label4, label5, label6,
-            _headsetMic, _localSpk, _localMic, _headsetSpk,
-            _gainRemote, _gainLocal,
+            grpRemote, grpLocal,
+            lblGainRemote, lblGainLocal, _gainRemote, _gainLocal,
             _toggle, btnRefresh, _status,
         });
 
         RefreshDeviceLists();
         UpdateControls();
+
+        // Save device selection as soon as the user changes a dropdown.
+        foreach (var box in new[] { _headsetMic, _headsetSpk, _localMic, _localSpk })
+            box.SelectedIndexChanged += (_, _) => SaveSelection();
 
         // Live status meter while running
         _meterTimer.Interval = 1000;
@@ -95,10 +120,11 @@ public sealed class DevicePickerForm : Form
 
         FormClosing += (_, e) =>
         {
-            if (e.CloseReason == CloseReason.UserClosing)
+            if (e.CloseReason == CloseReason.UserClosing && !_app.IsExiting)
             {
-                // Hide to tray instead of exiting; app keeps bridging.
+                // Closing the window stops the bridge, then hides to tray.
                 e.Cancel = true;
+                _app.Stop();
                 Hide();
             }
         };
@@ -106,50 +132,49 @@ public sealed class DevicePickerForm : Form
 
     // -------------------------------------------------------------- helpers
 
-    private Label AddLabel(string text, int x, int y)
+    private static Label MakeLabel(string text, int x, int y) => new()
     {
-        return new Label
-        {
-            Text = text,
-            AutoSize = true,
-            Location = new Point(x, y),
-        };
-    }
+        Text = text,
+        AutoSize = true,
+        Location = new Point(x, y),
+    };
 
-    private void BindCapture(ComboBox box, int x, int y)
+    private static ComboBox MakeCombo(DataFlow flow, Point location) => new()
     {
-        box.DropDownStyle = ComboBoxStyle.DropDownList;
-        box.Width = 488;
-        box.Location = new Point(x, y);
-        box.Tag = DataFlow.Capture;
-    }
-
-    private void BindRender(ComboBox box, int x, int y)
-    {
-        box.DropDownStyle = ComboBoxStyle.DropDownList;
-        box.Width = 488;
-        box.Location = new Point(x, y);
-        box.Tag = DataFlow.Render;
-    }
+        DropDownStyle = ComboBoxStyle.DropDownList,
+        Width = 466,
+        Location = location,
+        Tag = flow,
+    };
 
     private void RefreshDeviceLists()
     {
-        var capture = DeviceService.GetCaptureDevices();
-        var render = DeviceService.GetRenderDevices();
         var s = _app.Settings;
 
-        Fill(_headsetMic, capture, s.HeadsetMicId);
-        Fill(_headsetSpk, render, s.HeadsetSpeakerId);
-        Fill(_localMic, capture, s.LocalMicId);
-        Fill(_localSpk, render, s.LocalSpeakerId);
+        // Fresh list per combo — sharing one List instance makes WinForms
+        // sync the selected item across all combos bound to it.
+        Fill(_headsetMic, DeviceService.GetCaptureDevices(), s.HeadsetMicId);
+        Fill(_localMic, DeviceService.GetCaptureDevices(), s.LocalMicId);
+        Fill(_headsetSpk, DeviceService.GetRenderDevices(), s.HeadsetSpeakerId);
+        Fill(_localSpk, DeviceService.GetRenderDevices(), s.LocalSpeakerId);
     }
 
     private static void Fill(ComboBox box, System.Collections.Generic.List<AudioDeviceInfo> devices, string? selectedId)
     {
         box.DataSource = devices;
-        box.DisplayMember = nameof(AudioDeviceInfo.Name);
+        box.DisplayMember = nameof(AudioDeviceInfo.DisplayName);
         var idx = devices.FindIndex(d => d.Id == selectedId);
         box.SelectedIndex = idx >= 0 ? idx : 0;
+    }
+
+    private void SaveSelection()
+    {
+        var s = _app.Settings;
+        if (_headsetMic.SelectedItem is AudioDeviceInfo d1) s.HeadsetMicId = d1.Id;
+        if (_headsetSpk.SelectedItem is AudioDeviceInfo d2) s.HeadsetSpeakerId = d2.Id;
+        if (_localMic.SelectedItem is AudioDeviceInfo d3) s.LocalMicId = d3.Id;
+        if (_localSpk.SelectedItem is AudioDeviceInfo d4) s.LocalSpeakerId = d4.Id;
+        s.Save();
     }
 
     // ------------------------------------------------------------- actions
@@ -170,14 +195,26 @@ public sealed class DevicePickerForm : Form
 
     private void StartBridge()
     {
-        // Read selections into settings, then start.
-        var s = _app.Settings;
-        s.HeadsetMicId = ((AudioDeviceInfo)_headsetMic.SelectedItem!).Id;
-        s.LocalSpeakerId = ((AudioDeviceInfo)_localSpk.SelectedItem!).Id;
-        s.LocalMicId = ((AudioDeviceInfo)_localMic.SelectedItem!).Id;
-        s.HeadsetSpeakerId = ((AudioDeviceInfo)_headsetSpk.SelectedItem!).Id;
-        s.Save();
+        // Guard: virtual loopback devices are silent destinations/sources.
+        var picks = new (string role, AudioDeviceInfo? dev)[]
+        {
+            ("Remote microphone", _headsetMic.SelectedItem as AudioDeviceInfo),
+            ("Remote speaker", _headsetSpk.SelectedItem as AudioDeviceInfo),
+            ("Local microphone", _localMic.SelectedItem as AudioDeviceInfo),
+            ("Local speaker", _localSpk.SelectedItem as AudioDeviceInfo),
+        };
+        var virtuals = picks.Where(p => p.dev?.IsVirtual == true).ToList();
+        if (virtuals.Count > 0)
+        {
+            var names = string.Join("\n", virtuals.Select(v => $"• {v.role}: {v.dev!.Name}"));
+            var go = MessageBox.Show(this,
+                "These are virtual loopback devices — audio sent to/coming from them is NOT audible:\n\n" +
+                names + "\n\nStart anyway?",
+                "Virtual device selected", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning);
+            if (go != DialogResult.OK) return;
+        }
 
+        SaveSelection();
         _app.SetGains(_gainRemote.Value / 100f, _gainLocal.Value / 100f);
         _app.Start();
     }
@@ -192,8 +229,13 @@ public sealed class DevicePickerForm : Form
     {
         if (_app.IsRunning)
         {
+            var a = _app.BridgeRemoteToLocal;   // headset mic → speakers
+            var b = _app.BridgeLocalToRemote;   // your mic → headset
+
             _status.ForeColor = Color.ForestGreen;
-            _status.Text = "● Bridging — talk now. (buffer latency updates every second)";
+            _status.Text =
+                $"● Bridging   |   in-buffer {a?.BufferedMilliseconds ?? 0} ms, out-buffer {b?.BufferedMilliseconds ?? 0} ms" +
+                $"   |   levels: headset-mic {a?.LevelPercent ?? 0}%, your-mic {b?.LevelPercent ?? 0}%";
         }
         else
         {
