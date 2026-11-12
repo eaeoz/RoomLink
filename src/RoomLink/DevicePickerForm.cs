@@ -21,6 +21,8 @@ public sealed class DevicePickerForm : Form
     private readonly ComboBox _localSpk = new();
     private readonly TrackBar _gainRemote = new();
     private readonly TrackBar _gainLocal = new();
+    private readonly Label _gainRemoteVal = new();
+    private readonly Label _gainLocalVal = new();
     private readonly Button _toggle = new();
     private readonly Label _status = new();
     private readonly System.Windows.Forms.Timer _meterTimer = new();
@@ -63,21 +65,41 @@ public sealed class DevicePickerForm : Form
         grpLocal.Controls.AddRange(new Control[] { _localMic, _localSpk });
 
         // ------------------------------------------------------ gains ----
+        // 0..300%: above 100% is boost (will hard-clip loud peaks — normal
+        // for an intercom; below 100% attenuates).
         var lblGainRemote = MakeLabel("Remote → You volume", 16, 288);
         _gainRemote.Minimum = 0;
-        _gainRemote.Maximum = 100;
-        _gainRemote.TickFrequency = 10;
+        _gainRemote.Maximum = 300;
+        _gainRemote.TickFrequency = 25;
         _gainRemote.Width = 320;
         _gainRemote.Location = new Point(16, 308);
         _gainRemote.Value = (int)Math.Round(_app.Settings.HeadsetToSpeakersGain * 100);
+        _gainRemoteVal.AutoSize = true;
+        _gainRemoteVal.Location = new Point(348, 308);
+        _gainRemoteVal.Text = _gainRemote.Value + "%";
 
         var lblGainLocal = MakeLabel("You → Remote volume", 16, 336);
         _gainLocal.Minimum = 0;
-        _gainLocal.Maximum = 100;
-        _gainLocal.TickFrequency = 10;
+        _gainLocal.Maximum = 300;
+        _gainLocal.TickFrequency = 25;
         _gainLocal.Width = 320;
         _gainLocal.Location = new Point(16, 356);
         _gainLocal.Value = (int)Math.Round(_app.Settings.MicToHeadsetGain * 100);
+        _gainLocalVal.AutoSize = true;
+        _gainLocalVal.Location = new Point(348, 356);
+        _gainLocalVal.Text = _gainLocal.Value + "%";
+
+        // Apply live (also while bridging) and persist immediately.
+        _gainRemote.ValueChanged += (_, _) =>
+        {
+            _gainRemoteVal.Text = _gainRemote.Value + "%";
+            _app.SetGains(_gainRemote.Value / 100f, _gainLocal.Value / 100f);
+        };
+        _gainLocal.ValueChanged += (_, _) =>
+        {
+            _gainLocalVal.Text = _gainLocal.Value + "%";
+            _app.SetGains(_gainRemote.Value / 100f, _gainLocal.Value / 100f);
+        };
 
         // ---------------------------------------------------- buttons ----
         _toggle.Size = new Size(150, 34);
@@ -97,11 +119,41 @@ public sealed class DevicePickerForm : Form
         _status.Location = new Point(16, 434);
         _status.ForeColor = Color.DimGray;
 
+        // ------------------------------------------------- github link ----
+        var githubTip = new ToolTip();
+        var githubIcon = new PictureBox
+        {
+            Size = new Size(16, 16),
+            Location = new Point(430, 433),
+            Image = MakeGitHubMark(),
+            SizeMode = PictureBoxSizeMode.CenterImage,
+            Cursor = Cursors.Hand,
+        };
+        githubTip.SetToolTip(githubIcon, "github.com/eaeoz/RoomLink");
+        githubIcon.Click += (_, _) => OpenGitHub(this);
+
+        var githubLink = new LinkLabel
+        {
+            Text = "GitHub",
+            AutoSize = true,
+            Location = new Point(450, 434),
+            LinkColor = Color.RoyalBlue,
+            LinkBehavior = LinkBehavior.HoverUnderline,
+        };
+        githubTip.SetToolTip(githubLink, "github.com/eaeoz/RoomLink");
+        githubLink.LinkClicked += (_, e) =>
+        {
+            e.Link.Visited = true;
+            OpenGitHub(this);
+        };
+
         Controls.AddRange(new Control[]
         {
             grpRemote, grpLocal,
             lblGainRemote, lblGainLocal, _gainRemote, _gainLocal,
+            _gainRemoteVal, _gainLocalVal,
             _toggle, btnRefresh, _status,
+            githubIcon, githubLink,
         });
 
         RefreshDeviceLists();
@@ -131,6 +183,35 @@ public sealed class DevicePickerForm : Form
     }
 
     // -------------------------------------------------------------- helpers
+
+    private static void OpenGitHub(Control owner)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://github.com/eaeoz/RoomLink",
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(owner.FindForm(), ex.Message, "GitHub", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>Simple GitHub-cat-like mark drawn at runtime (head + ears).</summary>
+    private static Bitmap MakeGitHubMark()
+    {
+        var bmp = new Bitmap(16, 16);
+        using var g = Graphics.FromImage(bmp);
+        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+        using var brush = new SolidBrush(Color.FromArgb(36, 41, 46)); // GitHub dark
+        g.FillEllipse(brush, 2, 4, 12, 11);
+        g.FillPolygon(brush, new PointF[] { new(3.5f, 5.5f), new(2f, 1.5f), new(6.5f, 3.5f) });
+        g.FillPolygon(brush, new PointF[] { new(12.5f, 5.5f), new(14f, 1.5f), new(9.5f, 3.5f) });
+        return bmp;
+    }
 
     private static Label MakeLabel(string text, int x, int y) => new()
     {

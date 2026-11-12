@@ -77,6 +77,12 @@ public sealed class TrayContext : ApplicationContext
 
         menu.Items.AddRange(new ToolStripItem[] { startItem, stopItem, new ToolStripSeparator(), autoItem, new ToolStripSeparator() });
         menu.Items.Add("Open log file", null, (_, _) => OpenLog());
+        menu.Items.Add("GitHub project", null, (_, _) =>
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://github.com/eaeoz/RoomLink",
+                UseShellExecute = true,
+            }));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("E&xit", null, (_, _) => ExitApp());
 
@@ -146,6 +152,7 @@ public sealed class TrayContext : ApplicationContext
         _bridgeB?.SetGain(micToHeadset);
         _settings.HeadsetToSpeakersGain = headsetToSpeakers;
         _settings.MicToHeadsetGain = micToHeadset;
+        _settings.Save();
     }
 
     // ------------------------------------------------------------------ ui

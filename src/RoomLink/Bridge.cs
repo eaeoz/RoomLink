@@ -54,10 +54,10 @@ public sealed class Bridge : IDisposable
         set => SetGain(value);
     }
 
-    /// <summary>Live volume change, works while the bridge is running.</summary>
+    /// <summary>Live volume change, works while the bridge is running. 1.0 = 100%, up to 4.0 = 300% boost.</summary>
     public void SetGain(float value)
     {
-        _gain = Math.Clamp(value, 0f, 1f);
+        _gain = Math.Clamp(value, 0f, 4f);
         if (_volumeProvider != null)
             _volumeProvider.Volume = _gain;
     }
